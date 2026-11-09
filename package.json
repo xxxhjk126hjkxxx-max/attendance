@@ -1,0 +1,13 @@
+{
+  "name": "iua-attendance-student-management",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SQLite-backed student management API and UI for the IUA attendance dashboard",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1"
+  }
+}
