@@ -3,7 +3,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Database = require('better-sqlite3');
-const { migrate } = require('../migrate');
+const { migrate } = require('../src/db');
+const { migrations } = require('../src/db/migrations');
 
 function memoryDb() { return new Database(':memory:'); }
 
@@ -30,7 +31,7 @@ test('migration can run repeatedly on the new schema', () => {
   db.exec(`CREATE TABLE students (student_id TEXT PRIMARY KEY, name TEXT NOT NULL, course TEXT NOT NULL, academic_level TEXT NOT NULL);`);
   migrate(db);
   assert.doesNotThrow(() => migrate(db));
-  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count, 1);
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count, migrations.length);
   db.close();
 });
 

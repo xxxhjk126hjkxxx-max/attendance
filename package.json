@@ -7,8 +7,18 @@
     "start": "node migrate.js && node server.js",
     "test": "node --test"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
-    "better-sqlite3": "^11.8.1"
+    "@node-rs/argon2": "^2.2.2",
+    "arabic-persian-reshaper": "^1.0.1",
+    "better-sqlite3": "^11.8.1",
+    "exceljs": "^4.4.0",
+    "fontkit": "^2.0.4",
+    "html5-qrcode": "^2.3.8",
+    "jsqr": "^1.4.0",
+    "pdfkit": "^0.20.2",
+    "qrcode": "^1.5.4"
   }
 }
