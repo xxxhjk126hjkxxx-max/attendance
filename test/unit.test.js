@@ -67,3 +67,11 @@ test('arabic text is shaped for PDF output while latin stays untouched', () => {
   assert.notEqual(shaped, 'الحضور والغياب', 'arabic text must be reshaped/reordered');
   assert.equal(preparePdfText('Attendance report'), 'Attendance report');
 });
+
+test('client ip honours forwarding headers only for trusted proxies', () => {
+  const { clientIp } = require('../src/lib/http');
+  const req = { headers: { 'x-forwarded-for': '203.0.113.9, 10.0.0.1' }, socket: { remoteAddress: '::ffff:10.0.0.1' } };
+  assert.equal(clientIp(req), '10.0.0.1', 'spoofed header ignored by default');
+  assert.equal(clientIp(req, { trustProxy: true }), '203.0.113.9', 'first hop used behind a trusted proxy');
+  assert.equal(clientIp({ headers: {}, socket: { remoteAddress: '::ffff:127.0.0.1' } }), '127.0.0.1', 'ipv4-mapped addresses unwrapped');
+});

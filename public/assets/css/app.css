@@ -748,7 +748,8 @@ html[dir="rtl"] .scan-frame > i::after { border-width: 0 0 3px 3px; }
 
 /* ---------- Print ---------- */
 @media print {
-  .sidebar, .topbar, .page-actions, .qr-card-foot, .sidebar-toggle, .toast-stack { display: none !important; }
+  .sidebar, .topbar, .page-actions, .qr-card-foot, .sidebar-toggle, .toast-stack,
+  .table-toolbar, .pagination, .modal-backdrop, .print-hide { display: none !important; }
   .main { margin: 0 !important; }
   .page { padding: 0; }
   body { background: #fff; }

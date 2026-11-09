@@ -206,8 +206,17 @@ function serializeCookie(name, value, options = {}) {
   return parts.join('; ');
 }
 
-function clientIp(req) {
-  return req.socket?.remoteAddress || 'unknown';
+function clientIp(req, { trustProxy = false } = {}) {
+  if (trustProxy) {
+    // Only honour forwarding headers when the deployment explicitly declares a
+    // trusted reverse proxy, otherwise a client could spoof its own address and
+    // escape rate limiting.
+    const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    if (forwarded) return forwarded;
+    const real = String(req.headers['x-real-ip'] || '').trim();
+    if (real) return real;
+  }
+  return (req.socket?.remoteAddress || 'unknown').replace(/^::ffff:/, '');
 }
 
 module.exports = {

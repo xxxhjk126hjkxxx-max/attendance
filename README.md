@@ -63,7 +63,7 @@ list. No value is ever committed to the repository.
 | --- | --- | --- |
 | `NODE_ENV` | `development` | `production` enables stricter checks and disables demo seeding |
 | `HOST` / `PORT` | `0.0.0.0` / `3000` | HTTP listener |
-| `DB_PATH` | `./.data/attendance.sqlite` | SQLite database file |
+| `DB_PATH` | `./.data/attendance.sqlite` | SQLite database file (`DATABASE_URL=sqlite:/path` is accepted as an alias) |
 | `ADMIN_USERNAME` | `admin` | Initial super administrator username |
 | `ADMIN_PASSWORD` | — | Initial password; **required** on first start, must be strong |
 | `ADMIN_EMAIL` | — | Initial administrator e-mail |

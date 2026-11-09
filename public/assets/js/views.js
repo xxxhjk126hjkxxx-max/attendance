@@ -577,7 +577,7 @@
         } })
       ]
     }));
-    const info = el('div', { class: 'card', style: 'margin-bottom:18px' });
+    const info = el('div', { class: 'card print-hide', style: 'margin-bottom:18px' });
     info.innerHTML = `<div class="card-body" style="display:flex;gap:10px;align-items:flex-start;color:var(--muted);font-size:12.5px">
       ${icon('shield')}<span>${escapeHtml(t('qr.secureNote'))}</span></div>`;
     target.appendChild(info);

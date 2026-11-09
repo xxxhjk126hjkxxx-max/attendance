@@ -107,7 +107,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
     };
     if (permission && !can(user, permission)) {
       sendJson(res, 403, { error: 'You do not have permission to perform this action.', code: 'FORBIDDEN' });
-      audit.record({ actor: user, action: 'auth.permission_denied', entityType: 'api', entityId: req.url, details: { permission }, ip: clientIp(req) });
+      audit.record({ actor: user, action: 'auth.permission_denied', entityType: 'api', entityId: req.url, details: { permission }, ip: clientIp(req, { trustProxy: config.trustProxy }) });
       return null;
     }
     return user;
@@ -165,7 +165,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
   });
 
   route('POST', '/api/auth/login', async ({ req, res }) => {
-    const ip = clientIp(req);
+    const ip = clientIp(req, { trustProxy: config.trustProxy });
     if (!sameOrigin(req)) throw forbidden('Cross-origin sign-in rejected.');
     const limiterKey = `${ip}`;
     const hit = apiLimiter.key(`login:${limiterKey}`);
@@ -193,7 +193,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
     const { session, viaCookie } = sessionFromRequest(req);
     if (session) {
       if (viaCookie && !verifyCsrf(req, session)) throw forbidden('Reload the page before signing out.');
-      auth.logout(session.tokenHash, { id: session.userId, username: session.username }, clientIp(req));
+      auth.logout(session.tokenHash, { id: session.userId, username: session.username }, clientIp(req, { trustProxy: config.trustProxy }));
     }
     clearSessionCookies(res);
     sendJson(res, 200, { ok: true });
@@ -210,14 +210,14 @@ function createApplication({ dbPath = config.dbPath } = {}) {
     const user = await requireUser(req, res);
     if (!user) return;
     const body = await readJson(req, config.limits.jsonBodyBytes);
-    await auth.changePassword(user.id, { currentPassword: body.currentPassword, newPassword: body.newPassword }, { ip: clientIp(req), actor: user });
+    await auth.changePassword(user.id, { currentPassword: body.currentPassword, newPassword: body.newPassword }, { ip: clientIp(req, { trustProxy: config.trustProxy }), actor: user });
     clearSessionCookies(res);
     sendJson(res, 200, { ok: true, message: 'Password changed. Please sign in again with your new password.' });
   });
 
   route('POST', '/api/auth/forgot-password', async ({ req, res }) => {
     const body = await readJson(req, config.limits.jsonBodyBytes);
-    const reset = auth.createPasswordReset(body.identifier || body.email, { ip: clientIp(req) });
+    const reset = auth.createPasswordReset(body.identifier || body.email, { ip: clientIp(req, { trustProxy: config.trustProxy }) });
     if (reset) {
       const link = `/reset-password.html?token=${reset.token}`;
       // No mail service is configured: the link is written to the server log for
@@ -229,7 +229,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
 
   route('POST', '/api/auth/reset-password', async ({ req, res }) => {
     const body = await readJson(req, config.limits.jsonBodyBytes);
-    await auth.completePasswordReset({ token: body.token, newPassword: body.newPassword }, { ip: clientIp(req) });
+    await auth.completePasswordReset({ token: body.token, newPassword: body.newPassword }, { ip: clientIp(req, { trustProxy: config.trustProxy }) });
     sendJson(res, 200, { ok: true });
   });
 
@@ -289,7 +289,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
     const user = await requireUser(req, res, { permission: 'students.manage' });
     if (!user) return;
     const body = await readJson(req, config.limits.jsonBodyBytes);
-    sendJson(res, 201, { item: students.create(body, user, { ip: clientIp(req) }) });
+    sendJson(res, 201, { item: students.create(body, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }) });
   });
 
   route('GET', '/api/students/:id', async ({ req, res, params }) => {
@@ -302,13 +302,13 @@ function createApplication({ dbPath = config.dbPath } = {}) {
     const user = await requireUser(req, res, { permission: 'students.manage' });
     if (!user) return;
     const body = await readJson(req, config.limits.jsonBodyBytes);
-    sendJson(res, 200, { item: students.update(params.id, body, user, { ip: clientIp(req) }) });
+    sendJson(res, 200, { item: students.update(params.id, body, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }) });
   });
 
   route('DELETE', '/api/students/:id', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'students.manage' });
     if (!user) return;
-    sendJson(res, 200, students.remove(params.id, user, { ip: clientIp(req) }));
+    sendJson(res, 200, students.remove(params.id, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }));
   });
 
   route('GET', '/api/students/:id/attendance', async ({ req, res, params, url }) => {
@@ -356,13 +356,13 @@ function createApplication({ dbPath = config.dbPath } = {}) {
   route('POST', '/api/students/:id/qr/rotate', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'qr.manage' });
     if (!user) return;
-    sendJson(res, 200, students.rotateQr(params.id, user, { ip: clientIp(req) }));
+    sendJson(res, 200, students.rotateQr(params.id, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }));
   });
 
   route('POST', '/api/students/:id/qr/revoke', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'qr.manage' });
     if (!user) return;
-    sendJson(res, 200, students.revokeQr(params.id, user, { ip: clientIp(req) }));
+    sendJson(res, 200, students.revokeQr(params.id, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }));
   });
 
   // ---- QR utilities
@@ -416,7 +416,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
     const user = await requireUser(req, res, { permission: 'courses.manage' });
     if (!user) return;
     const body = await readJson(req, config.limits.jsonBodyBytes);
-    sendJson(res, 201, { item: courses.create(body, user, { ip: clientIp(req) }) });
+    sendJson(res, 201, { item: courses.create(body, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }) });
   });
 
   route('GET', '/api/courses/:id', async ({ req, res, params }) => {
@@ -429,38 +429,38 @@ function createApplication({ dbPath = config.dbPath } = {}) {
     const user = await requireUser(req, res, { permission: 'courses.manage' });
     if (!user) return;
     const body = await readJson(req, config.limits.jsonBodyBytes);
-    sendJson(res, 200, { item: courses.update(int(params.id, { min: 1 }), body, user, { ip: clientIp(req) }) });
+    sendJson(res, 200, { item: courses.update(int(params.id, { min: 1 }), body, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }) });
   });
 
   route('POST', '/api/courses/:id/archive', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'courses.manage' });
     if (!user) return;
-    sendJson(res, 200, { item: courses.archive(int(params.id, { min: 1 }), true, user, { ip: clientIp(req) }) });
+    sendJson(res, 200, { item: courses.archive(int(params.id, { min: 1 }), true, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }) });
   });
 
   route('POST', '/api/courses/:id/restore', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'courses.manage' });
     if (!user) return;
-    sendJson(res, 200, { item: courses.archive(int(params.id, { min: 1 }), false, user, { ip: clientIp(req) }) });
+    sendJson(res, 200, { item: courses.archive(int(params.id, { min: 1 }), false, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }) });
   });
 
   route('DELETE', '/api/courses/:id', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'courses.manage' });
     if (!user) return;
-    sendJson(res, 200, courses.remove(int(params.id, { min: 1 }), user, { ip: clientIp(req) }));
+    sendJson(res, 200, courses.remove(int(params.id, { min: 1 }), user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }));
   });
 
   route('POST', '/api/courses/:id/enrollments', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'courses.manage' });
     if (!user) return;
     const body = await readJson(req, config.limits.jsonBodyBytes);
-    sendJson(res, 200, courses.enroll(int(params.id, { min: 1 }), body.studentIds || body.studentId, user, { ip: clientIp(req) }));
+    sendJson(res, 200, courses.enroll(int(params.id, { min: 1 }), body.studentIds || body.studentId, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }));
   });
 
   route('DELETE', '/api/courses/:id/enrollments/:studentId', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'courses.manage' });
     if (!user) return;
-    sendJson(res, 200, courses.unenroll(int(params.id, { min: 1 }), params.studentId, user, { ip: clientIp(req) }));
+    sendJson(res, 200, courses.unenroll(int(params.id, { min: 1 }), params.studentId, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }));
   });
 
   // ---- lectures
@@ -485,7 +485,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
     const user = await requireUser(req, res, { permission: 'lectures.manage' });
     if (!user) return;
     const body = await readJson(req, config.limits.jsonBodyBytes);
-    sendJson(res, 201, { item: lectures.create(body, user, { ip: clientIp(req) }) });
+    sendJson(res, 201, { item: lectures.create(body, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }) });
   });
 
   route('GET', '/api/lectures/:id', async ({ req, res, params }) => {
@@ -498,26 +498,26 @@ function createApplication({ dbPath = config.dbPath } = {}) {
     const user = await requireUser(req, res, { permission: 'lectures.manage' });
     if (!user) return;
     const body = await readJson(req, config.limits.jsonBodyBytes);
-    sendJson(res, 200, { item: lectures.update(int(params.id, { min: 1 }), body, user, { ip: clientIp(req) }) });
+    sendJson(res, 200, { item: lectures.update(int(params.id, { min: 1 }), body, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }) });
   });
 
   route('DELETE', '/api/lectures/:id', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'lectures.manage' });
     if (!user) return;
-    sendJson(res, 200, lectures.remove(int(params.id, { min: 1 }), user, { ip: clientIp(req) }));
+    sendJson(res, 200, lectures.remove(int(params.id, { min: 1 }), user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }));
   });
 
   route('POST', '/api/lectures/:id/status', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'lectures.manage' });
     if (!user) return;
     const body = await readJson(req, config.limits.jsonBodyBytes);
-    sendJson(res, 200, { item: lectures.setStatus(int(params.id, { min: 1 }), str(body.status), user, { ip: clientIp(req) }) });
+    sendJson(res, 200, { item: lectures.setStatus(int(params.id, { min: 1 }), str(body.status), user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }) });
   });
 
   route('POST', '/api/lectures/:id/open-session', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'attendance.mark' });
     if (!user) return;
-    sendJson(res, 200, lectures.openSession(int(params.id, { min: 1 }), user, { ip: clientIp(req) }));
+    sendJson(res, 200, lectures.openSession(int(params.id, { min: 1 }), user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }));
   });
 
   route('GET', '/api/lectures/:id/attendance', async ({ req, res, params }) => {
@@ -549,7 +549,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
   route('POST', '/api/lectures/:id/finalize', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'attendance.mark' });
     if (!user) return;
-    sendJson(res, 200, attendance.finalizeLecture(int(params.id, { min: 1 }), user, { ip: clientIp(req) }));
+    sendJson(res, 200, attendance.finalizeLecture(int(params.id, { min: 1 }), user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }));
   });
 
   // ---- attendance
@@ -589,7 +589,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
       status: str(body.status || 'present', { max: 12 }),
       note: body.note,
       user,
-      ip: clientIp(req)
+      ip: clientIp(req, { trustProxy: config.trustProxy })
     });
     sendJson(res, (result.updated || result.unchanged) ? 200 : 201, result);
   });
@@ -602,7 +602,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
       lectureId: int(body.lectureId, { min: 1 }),
       entries: body.entries,
       user,
-      ip: clientIp(req)
+      ip: clientIp(req, { trustProxy: config.trustProxy })
     }));
   });
 
@@ -616,7 +616,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
       qr: body.qr,
       lectureId: int(body.lectureId, { min: 1 }),
       user,
-      ip: clientIp(req)
+      ip: clientIp(req, { trustProxy: config.trustProxy })
     });
     sendJson(res, result.duplicate ? 409 : 201, result);
   });
@@ -629,14 +629,14 @@ function createApplication({ dbPath = config.dbPath } = {}) {
       status: str(body.status, { max: 12 }),
       reason: body.reason || body.note,
       user,
-      ip: clientIp(req)
+      ip: clientIp(req, { trustProxy: config.trustProxy })
     }));
   });
 
   route('DELETE', '/api/attendance/:id', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'attendance.delete' });
     if (!user) return;
-    sendJson(res, 200, attendance.remove(int(params.id, { min: 1 }), user, { ip: clientIp(req) }));
+    sendJson(res, 200, attendance.remove(int(params.id, { min: 1 }), user, { ip: clientIp(req, { trustProxy: config.trustProxy }) }));
   });
 
   route('GET', '/api/attendance/audit', async ({ req, res, url }) => {
@@ -752,7 +752,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
       fullName: body.fullName,
       password: body.password,
       role: body.role
-    }, user, { ip: clientIp(req) });
+    }, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) });
     sendJson(res, 201, { item: created });
   });
 
@@ -766,14 +766,14 @@ function createApplication({ dbPath = config.dbPath } = {}) {
       role: body.role,
       status: body.status,
       password: body.password
-    }, user, { ip: clientIp(req) });
+    }, user, { ip: clientIp(req, { trustProxy: config.trustProxy }) });
     sendJson(res, 200, { item: updated });
   });
 
   route('DELETE', '/api/users/:id', async ({ req, res, params }) => {
     const user = await requireUser(req, res, { permission: 'users.manage' });
     if (!user) return;
-    auth.deleteUser(int(params.id, { min: 1 }), user, { ip: clientIp(req) });
+    auth.deleteUser(int(params.id, { min: 1 }), user, { ip: clientIp(req, { trustProxy: config.trustProxy }) });
     sendJson(res, 200, { deleted: int(params.id, { min: 1 }) });
   });
 
@@ -818,7 +818,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
       upsert.run(key, value);
       saved[key] = value;
     }
-    audit.record({ actor: user, action: 'settings.updated', entityType: 'settings', details: saved, ip: clientIp(req) });
+    audit.record({ actor: user, action: 'settings.updated', entityType: 'settings', details: saved, ip: clientIp(req, { trustProxy: config.trustProxy }) });
     sendJson(res, 200, { settings: saved });
   });
 
@@ -829,7 +829,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
     await db.backup(tmp);
     const buffer = require('node:fs').readFileSync(tmp);
     require('node:fs').unlinkSync(tmp);
-    audit.record({ actor: user, action: 'system.backup_downloaded', entityType: 'system', ip: clientIp(req) });
+    audit.record({ actor: user, action: 'system.backup_downloaded', entityType: 'system', ip: clientIp(req, { trustProxy: config.trustProxy }) });
     sendBuffer(res, 200, buffer, 'application/octet-stream', {
       'content-disposition': `attachment; filename="attendance-backup-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.sqlite"`
     });

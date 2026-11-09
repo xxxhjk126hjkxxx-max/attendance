@@ -38,6 +38,19 @@ const toBool = (value, fallback = false) => {
   return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
 };
 
+function resolveDbPath() {
+  const explicit = (process.env.DB_PATH || '').trim();
+  if (explicit) return explicit;
+  const url = (process.env.DATABASE_URL || '').trim();
+  if (url) {
+    return url
+      .replace(/^sqlite:(\/\/)?/, '')
+      .replace(/^file:/, '')
+      .split('?')[0];
+  }
+  return path.join(ROOT, '.data', 'attendance.sqlite');
+}
+
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const isProduction = NODE_ENV === 'production';
 
@@ -47,7 +60,10 @@ const config = {
   isProduction,
   host: process.env.HOST || '0.0.0.0',
   port: Number(process.env.PORT || 3000),
-  dbPath: process.env.DB_PATH || path.join(ROOT, '.data', 'attendance.sqlite'),
+  // DB_PATH is the primary setting; DATABASE_URL is accepted as an alias so
+  // deployments that standardise on a connection URL keep working
+  // (`sqlite:/abs/path.sqlite` and `file:` prefixes are understood).
+  dbPath: resolveDbPath(),
   sessionTtlMs: Number(process.env.SESSION_TTL_HOURS || 8) * 60 * 60 * 1000,
   // Cookies are only marked Secure when TLS is actually terminated in front of us.
   cookieSecure: toBool(process.env.COOKIE_SECURE, isProduction),

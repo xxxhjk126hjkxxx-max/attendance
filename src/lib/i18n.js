@@ -24,7 +24,6 @@ const dictionary = {
     'studentId': 'Student ID',
     'course': 'Course',
     'level': 'Academic level',
-    'level': 'Academic level',
     'lecture': 'Lecture',
     'date': 'Date',
     'time': 'Time',

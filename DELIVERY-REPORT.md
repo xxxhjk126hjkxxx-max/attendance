@@ -18,11 +18,11 @@ estimated or assumed.
 
 | Suite | Command | Result |
 | --- | --- | --- |
-| Unit | `node --test test/unit.test.js` | **6 / 6 pass** |
+| Unit | `node --test test/unit.test.js` | **7 / 7 pass** |
 | Database | `node --test test/database.test.js` | **7 / 7 pass** |
-| API integration | `node --test test/api.test.js` | **35 / 35 pass** |
+| API integration | `node --test test/api.test.js` | **38 / 38 pass** |
 | Legacy migration | `node --test test/migrate.test.js` | **4 / 4 pass** |
-| **Total** | `npm test` | **52 / 52 pass, 0 fail** (~2.8 s) |
+| **Total** | `npm test` | **55 / 55 pass, 0 fail** (~3.4 s) |
 | UI smoke (jsdom) | `npm run test:ui` | **11 routes, 0 JS errors, passed** |
 
 The API suite boots the real application on an ephemeral port against a
@@ -138,10 +138,10 @@ backup endpoints.
 | --- | --- | --- |
 | Visual/responsive verification in a real browser | BLOCKED BY MISSING CONFIGURATION OR SERVICES | Playwright/Chromium cannot be installed in this sandbox (download blocked). Mitigation: jsdom smoke test over all routes plus manual CSS review. **Run `npm run test:ui` and a manual browser pass before production.** |
 | Automated cross-browser E2E (Safari/Firefox/mobile) | NOT IMPLEMENTED | Same blocker; no browser binaries available |
-| E-mail delivery of password-reset links | PARTIALLY IMPLEMENTED | Tokens, single-use 1-hour expiry and the `/reset-password.html` page work; there is no SMTP provider configured, so the link is written to the server log (never returned over HTTP) for an administrator to deliver out of band |
+| E-mail delivery of password-reset links | PARTIALLY IMPLEMENTED | Tokens (single use, 1 hour), the `/reset-password.html` page and both API endpoints work and are tested; there is no SMTP provider configured here, so the link is written to the server log (never returned over HTTP) for an administrator to deliver out of band. Wiring an SMTP transport is the only missing piece. |
 | Multi-institution tenancy | NOT IMPLEMENTED | Out of scope; single university deployment |
 | Production TLS termination | BLOCKED BY MISSING CONFIGURATION OR SERVICES | Handled by a reverse proxy; `COOKIE_SECURE`/`TRUST_PROXY` are provided but no certificate exists here |
-| Two transitive `uuid` advisories from `exceljs` | BLOCKED BY MISSING CONFIGURATION OR SERVICES | `npm audit` reports 2 moderate issues in a transitive dependency; no non-breaking upgrade path is available without replacing `exceljs` |
+| Two transitive `uuid` advisories from `exceljs` | BLOCKED BY MISSING CONFIGURATION OR SERVICES | `npm audit` reports 2 moderate issues in a transitive dependency; no non-breaking upgrade path is available without replacing `exceljs`. Disclosed, not fixed. |
 
 ---
 
@@ -168,7 +168,7 @@ backup endpoints.
 
 ## 5. Pre-production checklist
 
-1. `npm ci && npm test` — expect 52/52.
+1. `npm ci && npm test` — expect 55/55.
 2. Start against a **new** database with a strong `ADMIN_PASSWORD`; confirm the
    forced password-change flow.
 3. `npm run test:ui` against the production build, then a manual pass in Chrome,

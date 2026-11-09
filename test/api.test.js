@@ -143,6 +143,50 @@ test('password change requires the current password and invalidates sessions', a
   assert.equal(staleSession.status, 401, 'changing the password invalidates other sessions');
 });
 
+test('password reset tokens are single use and expire', async () => {
+  const client = freshClient();
+  const identifier = ADMIN.username;
+  // The reset link is never returned over HTTP (no mail service is configured),
+  // so the token is read from the server-side store exactly as an administrator
+  // reading the log link would.
+  const issued = await client.post('/api/auth/forgot-password', { identifier });
+  assert.equal(issued.status, 200);
+  assert.equal(JSON.stringify(issued.body).includes('token'), false, 'the reset token is never returned in the response');
+
+  const row = ctx.db.prepare('SELECT * FROM password_resets ORDER BY requested_at DESC, rowid DESC LIMIT 1').get();
+  assert.ok(row, 'a reset request is persisted');
+  assert.ok(row.expires_at > row.requested_at, 'the reset token expires after it was requested');
+
+  // The link is printed to the server log for out-of-band delivery; the test
+  // issues its own token through the same service to obtain the plain value.
+  const { token: rawToken } = ctx.auth.createPasswordReset(identifier, { ip: '127.0.0.1' });
+  assert.ok(rawToken && rawToken.length >= 40);
+
+  const weak = await client.post('/api/auth/reset-password', { token: rawToken, newPassword: 'short' });
+  assert.equal(weak.status, 422, 'the password policy applies to resets');
+
+  const ok = await client.post('/api/auth/reset-password', { token: rawToken, newPassword: 'Reset-Passw0rd-2026!' });
+  assert.equal(ok.status, 200);
+  ctx.credentials.password = 'Reset-Passw0rd-2026!';
+
+  const replay = await client.post('/api/auth/reset-password', { token: rawToken, newPassword: 'Replay-Passw0rd-2026!' });
+  assert.equal(replay.status, 422, 'a reset token cannot be reused');
+
+  const signIn = await freshClient().login(ADMIN.username, 'Reset-Passw0rd-2026!');
+  assert.equal(signIn.status, 200);
+
+  const unknown = await client.post('/api/auth/reset-password', { token: 'x'.repeat(43), newPassword: 'Unknown-Passw0rd-2026!' });
+  assert.equal(unknown.status, 422);
+});
+
+test('an unknown account receives the same response as a known one', async () => {
+  const client = freshClient();
+  const known = await client.post('/api/auth/forgot-password', { identifier: ADMIN.username });
+  const unknown = await client.post('/api/auth/forgot-password', { identifier: 'nobody@example.edu' });
+  assert.equal(known.status, unknown.status);
+  assert.deepEqual(known.body, unknown.body, 'no account enumeration through the reset endpoint');
+});
+
 // ---------------------------------------------------------------- students
 
 test('student CRUD validates input and enforces unique IDs', async () => {
