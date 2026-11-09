@@ -52,6 +52,9 @@ const config = {
   // Cookies are only marked Secure when TLS is actually terminated in front of us.
   cookieSecure: toBool(process.env.COOKIE_SECURE, isProduction),
   trustProxy: toBool(process.env.TRUST_PROXY, isProduction),
+  // Embedding is allowed only when explicitly enabled; the CSP then limits
+  // frames to same-order origins instead of the invalid X-Frame-Options ALLOWALL.
+  allowFraming: toBool(process.env.ALLOW_FRAMING, false),
   admin: {
     username: (process.env.ADMIN_USERNAME || 'admin').trim(),
     password: process.env.ADMIN_PASSWORD || '',

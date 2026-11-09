@@ -5,7 +5,7 @@ const ExcelJS = require('exceljs');
 const { translator } = require('../lib/i18n');
 const { preparePdfText, hasArabic } = require('../lib/arabic');
 
-const FONT_DIR = path.resolve(__dirname, '../../assets/fonts');
+const FONT_DIR = path.resolve(__dirname, '../../public/assets/fonts');
 const NAVY = 'FF142B45';
 const GOLD = 'FFC5A15B';
 const LIGHT = 'FFF5F7FA';

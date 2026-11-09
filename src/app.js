@@ -842,7 +842,7 @@ function createApplication({ dbPath = config.dbPath } = {}) {
 
   function serveSpa(req, res, pathname) {
     const nonce = randomToken(16);
-    const headers = securityHeaders({ nonce, isProduction: config.isProduction, allowFraming: true });
+    const headers = securityHeaders({ nonce, isProduction: config.isProduction, allowFraming: config.allowFraming });
     applyHeaders(res, headers);
     const pageMap = {
       '/': 'index.html',

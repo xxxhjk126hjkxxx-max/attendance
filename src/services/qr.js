@@ -7,7 +7,7 @@ const { hasArabic, toVisual } = require('../lib/arabic');
 const { translator } = require('../lib/i18n');
 const { notFound, unprocessable } = require('../lib/errors');
 
-const FONT_DIR = path.resolve(__dirname, '../../assets/fonts');
+const FONT_DIR = path.resolve(__dirname, '../../public/assets/fonts');
 
 /**
  * Server-side QR rendering and student card composition.

@@ -568,6 +568,9 @@ test('security headers are sent and CSP blocks inline scripts without a nonce', 
   assert.match(response.headers.get('content-security-policy'), /script-src 'self' 'nonce-/);
   assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
   assert.equal(response.headers.get('referrer-policy'), 'same-origin');
+  assert.equal(response.headers.get('x-frame-options'), 'DENY');
+  assert.match(response.headers.get('content-security-policy'), /font-src 'self' data:/, 'no third-party font CDN is allowed');
+  assert.match(response.headers.get('content-security-policy'), /frame-ancestors 'none'/);
   const html = await response.text();
   assert.match(html, /<script nonce="[A-Za-z0-9_-]+">/);
   assert.ok(!html.includes('__APP_VERSION__'), 'server placeholders are replaced');

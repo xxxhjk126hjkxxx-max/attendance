@@ -31,8 +31,9 @@ function securityHeaders({ nonce, isProduction, allowFraming = false } = {}) {
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce ?? ''}'`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com data:",
+    // Fonts and styles are served from this origin; no third-party CDN is allowed.
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self' data:",
     "img-src 'self' data: blob:",
     "connect-src 'self'",
     "media-src 'self' blob:",
@@ -46,7 +47,9 @@ function securityHeaders({ nonce, isProduction, allowFraming = false } = {}) {
   return {
     'Content-Security-Policy': csp,
     'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': allowFraming ? 'ALLOWALL' : 'DENY',
+    // ALLOWALL is not a valid X-Frame-Options value; omit the header and let
+    // CSP frame-ancestors govern when framing is deliberately allowed.
+    ...(allowFraming ? {} : { 'X-Frame-Options': 'DENY' }),
     'Referrer-Policy': 'same-origin',
     'X-XSS-Protection': '0',
     'Cross-Origin-Opener-Policy': 'same-origin',

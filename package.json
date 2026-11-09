@@ -1,11 +1,16 @@
 {
-  "name": "iua-attendance-student-management",
-  "version": "1.1.0",
+  "name": "university-attendance",
+  "version": "2.0.0",
   "private": true,
-  "description": "SQLite-backed student management API and UI for the IUA attendance dashboard",
+  "description": "University Attendance Management System — secure, database-driven attendance, QR cards and academic reporting",
   "scripts": {
-    "start": "node migrate.js && node server.js",
-    "test": "node --test"
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js",
+    "migrate": "node migrate.js",
+    "migrate:status": "node migrate.js --status",
+    "seed:demo": "node scripts/seed-demo.js",
+    "test": "node --test test/unit.test.js test/database.test.js test/api.test.js test/migrate.test.js",
+    "test:ui": "node scripts/browser-check.js"
   },
   "engines": {
     "node": ">=20"
@@ -15,10 +20,11 @@
     "arabic-persian-reshaper": "^1.0.1",
     "better-sqlite3": "^11.8.1",
     "exceljs": "^4.4.0",
-    "fontkit": "^2.0.4",
-    "html5-qrcode": "^2.3.8",
     "jsqr": "^1.4.0",
     "pdfkit": "^0.20.2",
     "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "jsdom": "^31.0.0"
   }
 }
